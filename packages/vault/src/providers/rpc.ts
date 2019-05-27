@@ -64,8 +64,8 @@ export default class JsonRpcProvider implements IVaultProvider {
 
     newAccount(passphrase: string, name: string, description: string, chain: string): Promise<string> {
       this.notNull(chain, 'chain');
-      const params = [{ passphrase, name, description }, { chain }];
-      return this.rpc.call('personal_newAccount', params);
+      // const params = [{ passphrase, name, description }, { chain }];
+      return this.rpc.call('personal_newAccount', passphrase);
     }
 
     importContract(address: string, name: string, abi: any, chain: string): Promise<boolean> {
