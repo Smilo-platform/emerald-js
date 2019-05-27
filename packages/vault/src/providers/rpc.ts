@@ -34,7 +34,7 @@ export default class JsonRpcProvider implements IVaultProvider {
     signTransaction(tx: TxSignRequest, passphrase: string, chain: string) {
       this.notNull(chain, 'chain');
       const withPass = { ...tx, passphrase };
-      return this.rpc.call('emerald_signTransaction', [withPass, { chain }]);
+      return this.rpc.call('eth_signTransaction', [withPass, { chain }]);
     }
 
     importAccount(data, chain: string) {
@@ -65,7 +65,7 @@ export default class JsonRpcProvider implements IVaultProvider {
     newAccount(passphrase: string, name: string, description: string, chain: string): Promise<string> {
       this.notNull(chain, 'chain');
       const params = [{ passphrase, name, description }, { chain }];
-      return this.rpc.call('emerald_newAccount', params);
+      return this.rpc.call('personal_newAccount', params);
     }
 
     importContract(address: string, name: string, abi: any, chain: string): Promise<boolean> {
