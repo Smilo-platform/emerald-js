@@ -1,3 +1,18 @@
+/*
+Copyright 2019 ETCDEV GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 import { JsonRpc } from '@emeraldplatform/rpc';
 import { convert } from '@emeraldplatform/core';
 import BigNumber from 'bignumber.js';
@@ -41,7 +56,7 @@ export default class EthApi {
    */
   getBalance(address: string, blockNumber: number | string = 'latest'): Promise<BigNumber> {
     return this.rpc.call('eth_getBalance', [address, blockNumber])
-      .then(hexBalance => convert.toBigNumber(hexBalance));
+      .then((hexBalance: any) => convert.toBigNumber(hexBalance));
   }
 
   /**
@@ -49,7 +64,7 @@ export default class EthApi {
    */
   gasPrice(): Promise<BigNumber> {
     return this.rpc.call('eth_gasPrice', [])
-      .then(hexPrice => convert.toBigNumber(hexPrice));
+      .then((hexPrice: any) => convert.toBigNumber(hexPrice));
   }
 
   /**
@@ -57,7 +72,7 @@ export default class EthApi {
    */
   getSyncing(): Promise<SyncingResult> {
     return this.rpc.call('eth_syncing', [])
-      .then((result) => {
+      .then((result: any) => {
         if (!result) {
           return false;
         }
@@ -85,7 +100,7 @@ export default class EthApi {
       gas: (call.gas !== undefined) ? format.toHex(call.gas) : call.gas,
       nonce: (call.nonce !== undefined) ? format.toHex(call.nonce) : call.nonce,
     };
-    return this.rpc.call('eth_estimateGas', [txData]).then(gas => convert.toNumber(gas));
+    return this.rpc.call('eth_estimateGas', [txData]).then((gas: any) => convert.toNumber(gas));
   }
 
   /**
@@ -103,7 +118,7 @@ export default class EthApi {
    */
   getBlockNumber(): Promise<number> {
     return this.rpc.call('eth_blockNumber', [])
-      .then(result => convert.toNumber(result));
+      .then((result: any) => convert.toNumber(result));
   }
 
   /**
@@ -125,7 +140,7 @@ export default class EthApi {
         block = format.toHex(hashOrNumber);
       }
     }
-    return this.rpc.call(method, [block, full]).then(b => format.block(b));
+    return this.rpc.call(method, [block, full]).then((b: any) => format.block(b));
   }
 
   /**

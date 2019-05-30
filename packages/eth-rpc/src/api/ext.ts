@@ -1,9 +1,21 @@
+/*
+Copyright 2019 ETCDEV GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 import { JsonRpc } from '@emeraldplatform/rpc';
 import format from '../format';
-
-const formatBatchBlockResponse = (responses: any) => responses
-  .filter((r: any) => r.result)
-  .map((r: any) => format.block(r.result));
+import { DefaultBatch } from "@emeraldplatform/rpc";
 
 /**
  * Extended API
@@ -15,34 +27,47 @@ export default class ExtApi {
       this.rpc = jsonRpc;
     }
 
-    getBlocks(from: number, to: number) {
-      let requests = [];
+    getBlocks(from: number, to: number): Promise<Array<any>> {
+      let batch = new DefaultBatch();
+      let results: Array<Promise<any>> = [];
 
       for (let i = from; i <= to; i += 1) {
-        requests.push(this.rpc.newBatchRequest('eth_getBlockByNumber', [format.toHex(i), false]));
+        results.push(batch.addCall('eth_getBlockByNumber', [format.toHex(i), false]));
       }
 
-      return this.rpc.batch(requests).then(formatBatchBlockResponse);
+      this.rpc.execute(batch).catch(() => {});
+      return Promise.all(results)
+        .then((data: any) => data.map(format.block));
     }
 
-    getBlocksByNumbers(number: number | string | Array<any>) {
+    getBlocksByNumbers(number: number | string | Array<any>): Promise<Array<any>> {
       let formattedNumber = number;
       if (typeof number === 'number') {
         formattedNumber = format.toHex(number);
       }
+      let batch = new DefaultBatch();
 
-      const requests = (formattedNumber as Array<any>).map(
-        (blockNumber) => this.rpc.newBatchRequest('eth_getBlockByNumber', [blockNumber, false])
-      )
-      return this.rpc.batch(requests).then(formatBatchBlockResponse);
+      const requests = (formattedNumber as Array<any>).map((blockNumber) =>
+        batch.addCall('eth_getBlockByNumber', [blockNumber, false])
+      );
+
+      this.rpc.execute(batch).catch(() => {});
+      return Promise.all(requests)
+        .then((blocks: any) => blocks.map(format.block));
     }
 
-    getBalances(addresses: Array<string>, blockNumber: number | string = 'latest') {
+    getBalances(addresses: Array<string>, blockNumber: number | string = 'latest'): Promise<{ [key:string]: any }> {
       const balances: { [key:string]: any } = {};
-      const requests = addresses.map(a =>
-        this.rpc.newBatchRequest('eth_getBalance', [a, blockNumber], (resp) => { balances[a] = resp.result; }));
+      let batch = new DefaultBatch();
 
-      return this.rpc.batch(requests).then(() => balances);
+      const requests = addresses.map(a =>
+        batch.addCall('eth_getBalance', [a, blockNumber])
+          .then((resp: any) => { balances[a] = resp; })
+      );
+
+      this.rpc.execute(batch).catch(() => {});
+      return Promise.all(requests)
+        .then((_: any) => balances);
     }
 
     /**
@@ -50,25 +75,31 @@ export default class ExtApi {
      * @param hashes
      * @returns {Promise.<any>}
      */
-    getTransactions(hashes: Array<string>): Promise<any> {
+    getTransactions(hashes: Array<string>): Promise<Array<any>> {
+      let batch = new DefaultBatch();
+
       const requests = hashes.map(h =>
-        this.rpc.newBatchRequest('eth_getTransactionByHash', [h]));
-      return this.rpc.batch(requests);
+        batch.addCall('eth_getTransactionByHash', [h])
+      );
+
+      this.rpc.execute(batch).catch(() => {});
+      return Promise.all(requests)
     }
 
     /**
      * Many calls in one request
      */
     batchCall(calls: Array<{id: string, to: string, data: string}>, blockNumber: number | string = 'latest'): Promise<any> {
-      const results: { [key: string] : any } = {};
-      const responseHandler = (id:string) => (resp:any) => { results[id] = resp; };
-
-      const requests = calls.map(c =>
-        this.rpc.newBatchRequest(
-          'eth_call',
-          [{ to: c.to, data: c.data }, blockNumber],
-          responseHandler(c.id),
-        ));
-      return this.rpc.batch(requests).then(() => results);
+      let batch = new DefaultBatch();
+      let mapping: any = {};
+      calls.forEach((c) => {
+        batch.addCall("eth_call", [{to: c.to, data: c.data}, blockNumber])
+          .then((data: any) => mapping[c.id] = {result: data})
+          .catch((err: any) => mapping[c.id] = {result: null, error: err})
+      });
+      this.rpc.execute(batch).catch(() => {});
+      return Promise.all(batch.getItems().map(it => it.promise ))
+        .then(() => mapping);
     }
+
 }

@@ -1,8 +1,23 @@
+/*
+Copyright 2019 ETCDEV GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 import BigNumber from 'bignumber.js';
 import * as convert from './convert';
 
 const {
-  toNumber, toHex, toBigNumber,
+  toNumber, toHex, toBigNumber, quantitiesToHex,
 } = convert;
 
 test('toNumber should convert hex string to number', () => {
@@ -15,6 +30,27 @@ test('toNumber should convert number to number', () => {
   expect(toNumber(1)).toBe(1);
   expect(toNumber(0)).toBe(0);
   expect(toNumber(15)).toBe(15);
+  expect(toNumber(-1)).toBe(-1);
+  expect(toNumber(-15)).toBe(-15);
+});
+
+test('toNumber should accept empty', () => {
+  // @ts-ignore
+  expect(toNumber(null)).toBe(0);
+  // @ts-ignore
+  expect(toNumber(undefined)).toBe(0);
+
+  // @ts-ignore
+  expect(toNumber(null, -1)).toBe(-1);
+  // @ts-ignore
+  expect(toNumber(undefined, 10)).toBe(10);
+});
+
+describe('quantitiesToHex', () => {
+  it('converts without leading zeros', () => {
+    expect(quantitiesToHex(1024)).toEqual('0x400');
+    expect(quantitiesToHex(0)).toEqual('0x0');
+  });
 });
 
 describe('toHex', () => {
